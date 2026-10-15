@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FaceMood AI — วิเคราะห์สีหน้า</title>
+<style>
+:root{color-scheme:dark;--bg:#07111d;--panel:#101e2c;--line:#263b50;--text:#eaf4ff;--muted:#9db2c8;--blue:#54b8ff;--green:#39e69a}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#142a40,#07111d 60%);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:1100px;margin:auto;padding:22px 16px 40px}header{display:flex;align-items:center;gap:14px;margin-bottom:20px} .logo{width:48px;height:48px;border:2px solid var(--blue);border-radius:15px;display:grid;place-items:center;font-size:25px}h1{font-size:clamp(22px,4vw,32px);margin:0}header p{color:var(--muted);margin:4px 0 0;font-size:14px}
+.grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(280px,.8fr);gap:16px}.panel{background:linear-gradient(145deg,#122335,#0b1724);border:1px solid var(--line);border-radius:18px;padding:16px;min-width:0}.videoWrap{position:relative;overflow:hidden;border-radius:12px;background:#03080e;aspect-ratio:4/3;display:grid;place-items:center}.videoWrap video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}canvas{position:absolute;width:100%;height:100%;inset:0;pointer-events:none;transform:scaleX(-1)}.placeholder{color:var(--muted);padding:24px;text-align:center}.controls{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}button,select{border:1px solid #31506a;background:#142a3e;color:var(--text);border-radius:11px;padding:11px 15px;font:inherit}button{cursor:pointer}button.primary{background:#087cc0;border-color:#168ed2}button:disabled{opacity:.45;cursor:not-allowed}.status{font-size:13px;color:var(--muted);margin-top:12px}.status::before{content:"●";color:var(--green);margin-right:8px}.resultTop{display:flex;gap:14px;align-items:center;border-bottom:1px solid var(--line);padding:12px 0 18px}.faceIcon{font-size:54px}.emotion{font-size:28px;font-weight:750;color:var(--blue)}.small{font-size:13px;color:var(--muted)}.bars{display:grid;gap:15px;margin:18px 0}.barrow{display:grid;grid-template-columns:94px 1fr 42px;gap:10px;align-items:center;font-size:14px}.track{height:10px;border-radius:99px;background:#1d2d3d;overflow:hidden}.fill{height:100%;width:0;background:linear-gradient(90deg,#328bff,#61d8ff);border-radius:99px;transition:width .15s}.note{font-size:13px;line-height:1.6;color:var(--muted);background:#0a1521;border:1px solid var(--line);border-radius:12px;padding:12px}.wide{margin-top:16px}.how{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.how div{background:#0a1724;border:1px solid var(--line);border-radius:12px;padding:13px;font-size:14px}.how strong{display:block;margin-bottom:5px}.footer{font-size:12px;color:var(--muted);margin-top:18px;line-height:1.7}
+@media(max-width:760px){.grid{grid-template-columns:1fr}main{padding:16px 12px 30px}.panel{padding:12px}.how{grid-template-columns:1fr}.barrow{grid-template-columns:85px 1fr 38px}}
+</style>
+</head>
+<body><main>
+<header><div class="logo">◉</div><div><h1>FaceMood AI</h1><p>ทดลองวิเคราะห์การแสดงออกทางสีหน้าแบบเรียลไทม์</p></div></header>
+<div class="grid">
+<section class="panel">
+<div class="videoWrap" id="videoWrap"><div class="placeholder" id="placeholder">📷<br><br>กด “เปิดกล้อง” เพื่อเริ่มตรวจจับใบหน้า</div><video id="video" autoplay playsinline muted hidden></video><canvas id="overlay"></canvas></div>
+<div class="controls"><button class="primary" id="start">เปิดกล้อง</button><button id="stop" disabled>ปิดกล้อง</button><select id="camera" aria-label="เลือกกล้อง"><option value="user">กล้องหน้า</option><option value="environment">กล้องหลัง</option></select></div>
+<div class="status" id="status">พร้อมเริ่มต้น — กล้องจะทำงานหลังจากคุณอนุญาต</div>
+</section>
+<section class="panel">
+<div class="small">ผลประเมินจากลักษณะสีหน้า</div>
+<div class="resultTop"><div class="faceIcon" id="faceIcon">😐</div><div><div class="emotion" id="mainEmotion">รอตรวจจับ</div><div class="small" id="confidence">เปิดกล้องเพื่อเริ่มต้น</div></div></div>
+<div class="bars" id="bars"></div>
+<div class="note" id="summary">ระบบจะแสดงคะแนนโดยประมาณจากการขยับกล้ามเนื้อใบหน้า ไม่สามารถยืนยันความรู้สึกจริงของบุคคลได้</div>
+</section></div>
+<section class="panel wide"><h2 style="font-size:18px;margin:0 0 12px">วิธีใช้งาน</h2><div class="how"><div><strong>1. อนุญาตกล้อง</strong>กดเปิดกล้อง แล้วเลือก Allow/อนุญาต เมื่อเบราว์เซอร์ถาม</div><div><strong>2. จัดใบหน้าให้อยู่ในกรอบ</strong>ใช้แสงสว่างพอเหมาะ มองกล้อง และไม่บังใบหน้า</div><div><strong>3. ดูคะแนนประกอบ</strong>ลองยิ้ม ขมวดคิ้ว หรืออ้าปาก แล้วสังเกตคะแนนที่เปลี่ยนไป</div></div>
+<div class="footer">ความเป็นส่วนตัว: โค้ดนี้ประมวลผลจุดใบหน้าบนอุปกรณ์ผ่านโมเดลที่โหลดจาก CDN และไม่ได้ส่งภาพไปยังเซิร์ฟเวอร์ของผู้พัฒนาเว็บนี้ การโหลดโมเดลต้องใช้อินเทอร์เน็ต<br>ข้อจำกัด: นี่เป็นตัวอย่างเชิงทดลองที่ใช้ค่าการแสดงออกจากโมเดล ไม่ใช่เครื่องอ่านใจหรือเครื่องมือวินิจฉัยทางจิตวิทยา คะแนนอาจคลาดเคลื่อนตามแสง มุมกล้อง และแต่ละบุคคล</div>
+</section></main>
+<script type="module">
+import { FaceLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
+const $=id=>document.getElementById(id), video=$("video"), canvas=$("overlay"), ctx=canvas.getContext("2d");
+let landmarker=null, stream=null, running=false, lastVideoTime=-1, raf=0;
+const emotions=[
+ {key:"happy",label:"มีความสุข",icon:"😊"},
+ {key:"sad",label:"เศร้า",icon:"😔"},
+ {key:"angry",label:"โกรธ",icon:"😠"},
+ {key:"surprised",label:"ประหลาดใจ",icon:"😮"},
+ {key:"neutral",label:"เป็นกลาง",icon:"😐"}
+];
+const blendNames=["browDownLeft","browDownRight","mouthFrownLeft","mouthFrownRight","mouthSmileLeft","mouthSmileRight","jawOpen","eyeWideLeft","eyeWideRight","browInnerUp","browOuterUpLeft","browOuterUpRight"];
+function makeBars(){ $("bars").innerHTML=emotions.map(e=>`<div class="barrow"><span>${e.label}</span><div class="track"><div class="fill" id="bar-${e.key}"></div></div><span id="val-${e.key}">—</span></div>`).join("");} makeBars();
+function setStatus(t){$("status").textContent=t}
+function stopCamera(){running=false;if(raf)cancelAnimationFrame(raf);if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;video.srcObject=null;video.hidden=true;$("placeholder").hidden=false;$("start").disabled=false;$("stop").disabled=true;ctx.clearRect(0,0,canvas.width,canvas.height);setStatus("ปิดกล้องแล้ว");}
+$("stop").addEventListener("click",stopCamera);
+$("start").addEventListener("click",async()=>{
+ try{
+  $("start").disabled=true;setStatus("กำลังโหลดโมเดลและขออนุญาตกล้อง…");
+  if(!landmarker){const vision=await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm");landmarker=await FaceLandmarker.createFromOptions(vision,{baseOptions:{modelAssetPath:"https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task"},runningMode:"VIDEO",numFaces:1,outputFaceBlendshapes:true,outputFacialTransformationMatrixes:false});}
+  stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:$("camera").value,width:{ideal:640},height:{ideal:480}}});
+  video.srcObject=stream;await video.play();video.hidden=false;$("placeholder").hidden=true;running=true;$("stop").disabled=false;setStatus("กำลังวิเคราะห์สีหน้าแบบเรียลไทม์");loop();
+ }catch(err){$("start").disabled=false;setStatus(err.name==="NotAllowedError"?"ไม่ได้รับอนุญาตให้ใช้กล้อง กรุณาอนุญาตในตั้งค่าเบราว์เซอร์":`เริ่มกล้องไม่สำเร็จ: ${err.message||err}`);if(stream)stream.getTracks().forEach(t=>t.stop());}
+});
+function loop(){if(!running)return;if(video.readyState>=2&&video.currentTime!==lastVideoTime){lastVideoTime=video.currentTime;canvas.width=video.videoWidth;canvas.height=video.videoHeight;ctx.clearRect(0,0,canvas.width,canvas.height);
+ try{const result=landmarker.detectForVideo(video,performance.now());if(result.faceLandmarks?.length){drawFace(result.faceLandmarks[0]);scoreFace(result.faceBlendshapes?.[0]?.categories||[]);}else{resetResults();$("mainEmotion").textContent="ไม่พบใบหน้า";$("confidence").textContent="ลองขยับให้อยู่กลางภาพ";$("faceIcon").textContent="🔎";}}
+ catch(e){setStatus("วิเคราะห์ไม่สำเร็จ: "+e.message);}
+ }raf=requestAnimationFrame(loop);}
+function drawFace(points){ctx.fillStyle="#51e6b1";for(let i=0;i<points.length;i+=3){const p=points[i];ctx.beginPath();ctx.arc(p.x*canvas.width,p.y*canvas.height,Math.max(1,canvas.width/450),0,Math.PI*2);ctx.fill();}}
+function scoreFace(cats){
+ const b={};cats.forEach(c=>b[c.categoryName]=c.score);
+ const v=k=>b[k]||0;
+ const happy=Math.min(1,(v("mouthSmileLeft")+v("mouthSmileRight"))/1.2);
+ const sad=Math.min(1,(v("mouthFrownLeft")+v("mouthFrownRight"))*.8+v("browInnerUp")*.45);
+ const angry=Math.min(1,(v("browDownLeft")+v("browDownRight"))*.55+(v("mouthPressLeft")+v("mouthPressRight"))*.3);
+ const surprised=Math.min(1,v("jawOpen")*.65+(v("eyeWideLeft")+v("eyeWideRight"))*.22+(v("browInnerUp")*.2));
+ const neutral=Math.max(.05,1-Math.max(happy,sad,angry,surprised));
+ const vals={happy,sad,angry,surprised,neutral};const sum=Object.values(vals).reduce((a,b)=>a+b,0)||1;
+ const normalized={};for(const e of emotions){normalized[e.key]=Math.round(vals[e.key]/sum*100);$("bar-"+e.key).style.width=normalized[e.key]+"%";$("val-"+e.key).textContent=normalized[e.key]+"%";}
+ const best=emotions.reduce((a,e)=>normalized[e.key]>normalized[a.key]?e:a,emotions[0]);
+ $("mainEmotion").textContent=best.label;$("faceIcon").textContent=best.icon;$("confidence").textContent="คะแนนจากรูปแบบการแสดงออก (ไม่ใช่ความแม่นยำของความรู้สึก)";
+ const explain={happy:"ตรวจพบการยกมุมปาก ซึ่งอาจสอดคล้องกับการยิ้ม",sad:"ตรวจพบลักษณะบางอย่าง เช่น มุมปากตกหรือคิ้วด้านในยก",angry:"ตรวจพบการขมวดคิ้วหรือเกร็งบริเวณปาก",surprised:"ตรวจพบลักษณะตาเบิกหรืออ้าปาก",neutral:"ยังไม่พบรูปแบบเด่นชัดจากตัวชี้วัดที่ใช้"};
+ $("summary").textContent=explain[best.key]+" — ผลนี้เป็นเพียงการประเมินลักษณะภายนอก อารมณ์จริงอาจแตกต่างได้";
+}
+function resetResults(){for(const e of emotions){$("bar-"+e.key).style.width="0%";$("val-"+e.key).textContent="—";}}
+window.addEventListener("pagehide",()=>{if(stream)stream.getTracks().forEach(t=>t.stop())});
+</script></body></html>
